@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertitore indirizzo logico in fisico</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/cosmo/bootstrap.min.css" integrity="sha384-5QFXyVb+lrCzdN228VS3HmzpiE7ZVwLQtkt+0d9W43LQMzz4HBnnqvVxKg6O+04d" crossorigin="anonymous">
+
+    <style>
+        .invalid-input{
+            border: #ff0039 solid 3px;
+        }
+
+        .hidden{
+            display: none;
+        }
+
+        .form-control[readonly]{
+            background-color: white !important;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="main" class="container">
+
+        <h1>Converti indirizzo logico in indirizzo fisico</h1>
+        <a href="/index.html">Torna alla pagina principale</a>
+
+        <details class="mt-2">
+            <summary>Visualizza le istruzioni cliccando qui</summary>
+            <ol class="list-group">
+                <li class="list-group-item">Inserisci l'indirizzo logico nella sezione adeguata.</li>
+                <li class="list-group-item">Inserisci la dimensione in Byte di una pagina nella sezione adeguata. Un KB (KByte) sono 1024 Byte.</li>
+                <li class="list-group-item">Inserisci i valori dei frame nella tabella delle pagine. Cliccare sul pulsante verde "+" per aggiungere una riga in fondo alla tabella e premere sul pulsante rosso "-" per rimuovere l'ultima riga.</li>
+            </ol>
+        </details>
+
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Indirizzo logico:</span>
+            <input type="number" class="form-control" id="logical_address" />
+        </div>
+
+        <div class="input-group mb-3">
+            <span class="input-group-text">Dimensione pagina (Byte):</span>
+            <input type="number" class="form-control" id="page_size" />
+        </div>
+
+        <table class="table">
+            <thead><th>Numero pagina</th><th>Numero frame</th><th><button class="btn btn-success mr-1" id="add">+</button><button class="btn btn-danger" id="remove">-</button></th></thead>
+            <tbody id="page_table">
+                <tr><th>0</th><th><input type="number" class="form-control frame_number" /></th><th></th></tr>
+            </tbody>
+        </table>
+
+        <button class="btn btn-primary" id="calculate">Calcola</button>
+
+        <div class="hidden" id="result">
+            <h3>Il risultato e': <span id="result-span"></span></h3>
+        </div>
+
+
+        <h4 class="mt-4">Errori:</h4>
+        <textarea readonly class="form-control" id="errors" aria-label="With textarea" style="height: 500px;"></textarea>
+
+
+    </div>
+
+    <!-- JAVASCRIPT -->
+
+    <script src="logic.js"></script>
+    <script src="gui.js"></script>
+    <script src="tests.js"></script>
+
+    <script>
+
+        window.addEventListener('load', function () {
+
+            const add_btn = document.getElementById("add");
+            const remove_btn = document.getElementById("remove");
+            const calculate_btn = document.getElementById("calculate");
+            const errors_area = document.getElementById("errors");
+            const page_table_el = document.getElementById("page_table");
+            const result_container = document.getElementById("result");
+            const result_number = document.getElementById("result-span");
+
+            add_btn.addEventListener("click", () => {
+                add_page_table_row();
+            });
+
+            remove_btn.addEventListener("click", () => {
+                remove_page_table_row();
+            });
+
+            calculate_btn.addEventListener("click", () =>{
+                errors_area.textContent = "";
+
+                // try to parse the input from the GUI
+                const parsed = parse_input();
+                if (parsed.success === false){
+                    if (parsed.logical_address === null){
+                        errors_area.textContent += "Inserire un indirizzo logico in input\n";
+                    }
+
+                    if (parsed.page_size === null){
+                        errors_area.textContent += "Inserire la dimensione delle pagine in input\n";
+                    }
+
+                    if (page_table_el.getElementsByClassName("invalid-input").length > 0){
+                        errors_area.textContent += "Risolvere errori input nella page table: forse non e' stato inserito qualche valore?\n";
+                    }
+                    return;
+                }
+
+                // check if some values are missing from the page table
+                if (page_table_el.getElementsByClassName("invalid-input").length > 0){
+                    errors_area.textContent += "Risolvere errori input nella page table: forse non e' stato inserito qualche valore?\n";
+                    return;
+                }
+
+                // check input values
+                const errors = check_inputs(parsed.logical_address, parsed.page_size, parsed.page_table);
+                errors.forEach(error => {
+                    errors_area.textContent += error + "\n";
+                });
+
+                if (errors.length > 0){
+                    return;
+                }
+
+                // calculate the physical address
+                const result = calculate_real_address(
+                    parsed.logical_address,
+                    parsed.page_size,
+                    parsed.page_table
+                );
+
+                result_container.className = "mt-4";
+                result_number.textContent = result.toString();
+            });
+        });
+    </script>
+</body>
+</html>
