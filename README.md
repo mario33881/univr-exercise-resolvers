@@ -7,7 +7,8 @@ Per accedere ai tool e' possibile raggiungere la [pagina principale cliccando qu
 ## Lista di tool presenti
 
 Sistemi Operativi:
-* [(Gestione della memoria) Convertitore indirizzo logico in indirizzo fisico](https://mario33881.github.io/univr-exercise-resolvers/sistemi_operativi/logical_to_physical_address/index.html)
+* [(Deadlock) Algoritmo di rilevazione](https://mario33881.github.io/univr-exercise-resolvers/sistemi_operativi/rilevazione/built/index.html)
+* [(Gestione della memoria) Convertitore indirizzo logico in indirizzo fisico](https://mario33881.github.io/univr-exercise-resolvers/sistemi_operativi/logical_to_physical_address/built/index.html)
 
 ## Autore
 Stefano Zenaro
