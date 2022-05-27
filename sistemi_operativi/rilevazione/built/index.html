@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rilevazione Deadlock</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/cosmo/bootstrap.min.css" integrity="sha384-5QFXyVb+lrCzdN228VS3HmzpiE7ZVwLQtkt+0d9W43LQMzz4HBnnqvVxKg6O+04d" crossorigin="anonymous">
+
+    <style>
+        .separator {
+            border-right: black 2px solid;
+        }
+
+        .form-control[readonly]{
+            background-color: white !important;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="main" class="container">
+        <h1>Algoritmo rilevazione deadlock</h1>
+        
+        <a href="../../../index.html">Torna alla pagina principale</a>
+
+        <details class="mt-2">
+            <summary>Visualizza le istruzioni cliccando qui</summary>
+            <ol class="list-group">
+                <li class="list-group-item">Clicca sul pulsante "Aggiungi riga" per aggiungere una riga in fondo alla tabella oppure "Rimuovi riga" per rimuoverla.</li>
+                <li class="list-group-item">Clicca sul pulsante "Aggiungi colonna" per aggiungere contemporaneamente una colonna alla tabella "Alloc" e alla tabella "Request".</li>
+                <li class="list-group-item">Inserisci i valori corretti all'interno degli spazi appositi.</li>
+                <li class="list-group-item">Clicca sul pulsante "Calcola" per eseguire l'algoritmo di rilevazione. Nell'area sotto a "Risultato:" si vedra' il risultato dell'algoritmo oppure messaggi di errore in caso di inserimento errato degli input.</li>
+            </ol>
+        </details>
+
+        <button id="add_row" class="btn btn-success">Aggiungi riga</button>
+        <button id="remove_row" class="btn btn-danger">Rimuovi riga</button>
+        
+        <br>
+
+        <button id="add_col" class="btn btn-success mt-2 mb-2">Aggiungi colonna</button>
+        <button id="remove_col" class="btn btn-danger mt-2 mb-2">Rimuovi colonna</button>
+
+        <table id="input_table" class="table text-center">
+            <thead><tr><th></th><th id="table_alloc_title" colspan="1" class="separator">Alloc</th><th id="table_request_title" colspan="1">Request</th></tr></thead>
+            <tbody id="input_table_body">
+                <tr id="input_table_header"><td></td><td class="separator">A</td><td>A</td></tr>
+                <tr><td>P1</td><td class="separator"><input type="number" class="form-control" /></td><td><input type="number" class="form-control" /></td></tr>
+            </tbody>
+        </table>
+
+        <button id="submit" class="btn btn-primary">Calcola</button> 
+        
+        <p>NOTA: l'indice dei processi parte da 1</p>
+
+        <h4>Risultato:</h4>
+        <textarea id="result" class="form-control" style="height: 500px;" aria-label="With textarea" readonly></textarea>
+    </div>
+
+    <script src="logic.js"></script>
+    <script src="gui.js"></script>
+    <script src="test.js"></script>
+
+    <script>
+        
+        window.addEventListener('load', function () {
+
+        
+            document.querySelector("#add_row").addEventListener("click", function(){
+                add_table_row();
+            });
+
+            document.querySelector("#remove_row").addEventListener("click", function(){
+                remove_table_row();
+            });
+            
+            document.querySelector("#add_col").addEventListener("click", function(){
+                add_table_col();
+            });
+            
+            document.querySelector("#remove_col").addEventListener("click", function(){
+                remove_table_col();
+            });
+
+            document.querySelector("#submit").addEventListener("click", function(){
+                
+                const values = parse_table_input();
+                const validation_res = validate_input(values);
+                const result_element = document.querySelector("#result");
+                result_element.value = "";
+
+                if (validation_res.valid){
+                    const resources = create_resource_arrays(values);
+                    const result = find_deadlock(resources.alloc, resources.request);
+                    for (const step of result.steps) {
+                        console.log(step);
+                        console.log(" ")
+                        for (line of step.split("\n")) {
+                            result_element.value += line;
+                        }
+                        result_element.value += "\n";
+                    }
+                    
+                }
+                else{
+                    result_element.textContent = "Non sono riuscito a validare l'input:\n";
+                    for (const line of validation_res.details) {
+                        result_element.value += line + "\n";
+                    }
+                    
+                    console.log(validation_res);
+                }
+            });
+
+        });
+
+    </script>
+</body>
+</html>
