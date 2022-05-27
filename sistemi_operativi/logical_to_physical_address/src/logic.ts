@@ -7,7 +7,7 @@
  * @param {...number} page_table List of frame numbers
  * @returns Real address
  */
-function calculate_real_address(logical_address, page_size, page_table) {
+function calculate_real_address(logical_address: number, page_size: number, page_table: number[]) : number {
     // calculate page number
     const page_number = Math.floor(logical_address/page_size);
 
@@ -33,8 +33,8 @@ function calculate_real_address(logical_address, page_size, page_table) {
  * @param {...number} page_table List of frame numbers
  * @returns Input errors
  */
-function check_inputs(logical_address, page_size, page_table){
-    const errors = [];
+function check_inputs(logical_address: number, page_size: number, page_table: number[]) : string[] {
+    const errors : string[] = [];
     if (logical_address < 0){
         errors.push("L'indirizzo logico non puo' essere negativo");
     }
@@ -63,7 +63,7 @@ function check_inputs(logical_address, page_size, page_table){
  * @param {...number} list List of numbers
  * @returns true if all numbers are positive, false otherwise
  */
-function check_all_positive(list){
+function check_all_positive(list: number[]) : boolean {
     for (const element of list) {
         if (element < 0){
             return false;
