@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempo accesso medio</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/cosmo/bootstrap.min.css" integrity="sha384-5QFXyVb+lrCzdN228VS3HmzpiE7ZVwLQtkt+0d9W43LQMzz4HBnnqvVxKg6O+04d" crossorigin="anonymous">
+
+    <style>
+        .form-switch .form-check-input {
+            margin-left: -20px !important;
+        }
+
+        .form-check-label{
+            margin-left: 20px !important;
+        }
+        
+        .invalid{
+            border: #ff0039 solid 3px;
+        }
+
+        .form-control[readonly]{
+            background-color: white !important;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="main" class="container">
+        <h1>Calcolatore tempo di accesso medio</h1>
+        <a href="../../../index.html">Torna alla pagina principale</a>
+
+        <h3>Informazioni memoria RAM:</h3>
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Tempo accesso alla memoria:</span>
+            <input type="number" class="form-control" id="access_memory_time" />
+        </div>
+
+        <hr>
+
+        <h3>Informazioni cache TLB:</h3>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="tlb_is_present" checked>
+            <label class="form-check-label" for="tlb_is_present">Cache TLB</label>
+        </div>
+
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Tempo accesso al TLB:</span>
+            <input type="number" class="form-control" id="access_tlb_time" />
+        </div>
+
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Percentuale TLB Hit:</span>
+            <input type="number" class="form-control" id="tlb_hit_percentage" />
+        </div>
+
+        <hr>
+
+        <h3>Informazioni memoria virtuale:</h3>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="virtual_memory_is_present" checked>
+            <label class="form-check-label" for="virtual_memory_is_present">Memoria Virtuale (page fault)</label>
+        </div>
+
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Tempo medio rimpiazzamento delle pagine:</span>
+            <input type="number" class="form-control" id="page_swap_time" />
+        </div>
+
+        <div class="input-group mb-3 mt-2">
+            <span class="input-group-text">Percentuale page fault:</span>
+            <input type="number" class="form-control" id="page_fault_percentage" />
+        </div>
+
+        <p>Nota: le unita' di misura dei tempi devono corrispondere. Il risultato sara' nella stessa unita' di misura degli input.</p>
+
+        <button id="submit" class="btn btn-primary">Calcola</button>
+
+        <h4>Risultato: <span id="result"></span></h4>
+
+        <h4 class="mt-4">Errori:</h4>
+        <textarea readonly class="form-control" id="errors" aria-label="With textarea" style="height: 500px;"></textarea>
+    </div>
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
+
+    <script>
+        const access_memory_time = document.querySelector("#access_memory_time");
+        const tlb_is_present = document.querySelector("#tlb_is_present");
+        const access_tlb_time = document.querySelector("#access_tlb_time");
+        const tlb_hit_percentage = document.querySelector("#tlb_hit_percentage");
+        const virtual_memory_is_present = document.querySelector("#virtual_memory_is_present");
+        const page_swap_time = document.querySelector("#page_swap_time");
+        const page_fault_percentage = document.querySelector("#page_fault_percentage");
+        const submit = document.querySelector("#submit");
+        const result = document.querySelector("#result");
+        const errors = document.querySelector("#errors");
+
+        /**
+         * Parse all the inputs.
+         * 
+        */
+        function parse_input(){
+
+            const values = {
+                "access_memory_time": access_memory_time.valueAsNumber,
+                "tlb_is_present": tlb_is_present.checked,
+                "access_tlb_time": access_tlb_time.valueAsNumber,
+                "tlb_hit_percentage": tlb_hit_percentage.valueAsNumber,
+                "virtual_memory_is_present": virtual_memory_is_present.checked,
+                "page_swap_time": page_swap_time.valueAsNumber,
+                "page_fault_percentage": page_fault_percentage.valueAsNumber
+            }
+
+            return values;
+        }
+
+
+        /**
+         * Validate inputs.
+         * An inputs is valid if:
+         * - it contains a value
+         * - its positive
+         * - it is between 0 and 100 (for percentages)
+        */
+        function validate_input(values){
+
+            const result = {valid: true, details: []}
+            access_memory_time.classList = "form-control";
+            access_tlb_time.classList = "form-control";
+            tlb_hit_percentage.classList = "form-control";
+            page_swap_time.classList = "form-control";
+            page_fault_percentage.classList = "form-control";
+            
+            if (Number.isNaN(values.access_memory_time)){
+                result.details.push("Inserire il tempo di accesso alla memoria");
+                result.valid = false;
+                access_memory_time.classList += " invalid";
+            }
+
+            if (values.access_memory_time < 0){
+                result.details.push("Il tempo di accesso alla memoria non puo' essere inferiore a zero");
+                result.valid = false;
+                access_memory_time.classList += " invalid";
+            }
+            
+            if (values.tlb_is_present){
+
+                if (Number.isNaN(values.access_tlb_time)){
+                    result.details.push("Inserire il tempo di accesso al TLB");
+                    result.valid = false;
+                    access_tlb_time.classList += " invalid";
+                }
+
+                if (values.access_tlb_time < 0){
+                    result.details.push("Il tempo di accesso al TLB non puo' essere inferiore a zero");
+                    result.valid = false;
+                    access_tlb_time.classList += " invalid";
+                }
+                
+                if (Number.isNaN(values.tlb_hit_percentage)){
+                    result.details.push("Inserire la percentuale di TLB hit");
+                    result.valid = false;
+                    tlb_hit_percentage.classList += " invalid";
+                }
+
+                if (values.tlb_hit_percentage < 0 || values.tlb_hit_percentage > 100){
+                    result.details.push("La percentuale di TLB hit deve essere compresa tra 0 % e 100 %");
+                    result.valid = false;
+                    tlb_hit_percentage.classList += " invalid";
+                }
+            }
+
+            if (values.virtual_memory_is_present){
+
+                if (Number.isNaN(values.page_swap_time)){
+                    result.details.push("Inserire il tempo medio necessario per rimpiazzare le pagine");
+                    result.valid = false;
+                    page_swap_time.classList += " invalid";
+                }
+
+                if (values.page_swap_time < 0){
+                    result.details.push("Il tempo di rimpiazzamento delle pagine non puo' essere inferiore a zero");
+                    result.valid = false;
+                    page_swap_time.classList += " invalid";
+                }
+                
+                if (Number.isNaN(values.page_fault_percentage)){
+                    result.details.push("Inserire la percentuale di page fault");
+                    result.valid = false;
+                    page_fault_percentage.classList += " invalid";
+                }
+
+                if (values.page_fault_percentage < 0 || values.page_fault_percentage > 100){
+                    result.details.push("La percentuale page fault deve essere compresa tra 0 % e 100 %");
+                    result.valid = false;
+                    page_fault_percentage.classList += " invalid";
+                }
+            }
+
+            return result;
+        }
+
+        /**
+         * Calculate the Effective Access Time.
+         * 
+         * If no TLB and no virtual memory are present the effective access time is the RAM access time.
+         * 
+         * If there's the TLB cache the EAT value is: (Tmem + Ttlb) * (TLB hit) + (2*Tmem + Ttlb) * (TLB hit)
+         * 
+         * If the system has virtual memory EAT is: (p page miss * t page fault) + (1 – p page miss) * tmem
+         * > tmem depends on whether there the system has a TLB cache or not
+        */
+        function calculate_time(values){
+            const result = {result: null, details: []};
+
+            if (values.tlb_is_present === false && values.virtual_memory_is_present === false){
+                result.result = values.access_memory_time;
+                return result;
+            }
+
+            let calc_result = values.access_memory_time;
+
+            const tlb_hit = values.tlb_hit_percentage / 100;
+            if (values.tlb_is_present){
+                // (Tmem + Ttlb) * (TLB hit) + (2*Tmem + Ttlb) * (TLB hit)
+                calc_result = (values.access_tlb_time + values.access_memory_time) * tlb_hit + (values.access_tlb_time + 2 * values.access_memory_time) * (1 - tlb_hit);
+            }
+
+            const page_miss = values.page_fault_percentage / 100;
+            if (values.virtual_memory_is_present){
+                // (p page miss * t page fault) + (1 – p page miss) * tmem
+                calc_result = (values.page_swap_time) * page_miss + (calc_result) * (1 - page_miss);
+            }
+
+            result.result = calc_result;
+            return result;
+        }
+
+        /**
+         * When the user wants to calculate the result,
+         * parse the input and validate it,
+         * then calculate the result.
+        */
+        submit.addEventListener("click", function(){
+            result.textContent = "";
+            errors.textContent = "";
+            const input = parse_input();
+            const validate = validate_input(input);
+
+            if (validate.valid){
+                const calc_res = calculate_time(input);
+                result.textContent = calc_res.result;
+            }
+            else{
+                console.log("invalid input:")
+                for (const line of validate.details) {
+                    errors.textContent += line + "\n";
+                }
+                console.log(validate.details);
+            }
+        });
+
+    </script>
+
+</body>
+</html>
