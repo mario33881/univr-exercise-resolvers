@@ -50,7 +50,7 @@ function check_inputs(logical_address: number, page_size: number, page_table: nu
     if (errors.length == 0) {
         const page_number = Math.floor(logical_address/page_size);
         if (page_number >= page_table.length){
-            errors.push("Un numero di pagina (" + page_number + ") va fuori range dalla page table: forse non si sono inseriti tutti i valori necessari nella page table?");
+            errors.push("Un numero di pagina (" + page_number + ") va fuori range dalla page table: forse non si sono inseriti tutti i valori necessari nella page table? Se cosi' non fosse l'indirizzo logico e' invalido");
         }
     }
     return errors;
